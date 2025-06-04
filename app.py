@@ -1,64 +1,123 @@
 import gradio as gr
-from huggingface_hub import InferenceClient
 
-"""
-For more information on `huggingface_hub` Inference API support, please check the docs: https://huggingface.co/docs/huggingface_hub/v0.22.2/en/guides/inference
-"""
-client = InferenceClient("HuggingFaceH4/zephyr-7b-beta")
+from llama_index.indices.managed.llama_cloud import LlamaCloudIndex, LlamaCloudCompositeRetriever
+from llama_index.core import Settings
+from llama_index.llms.anthropic import Anthropic
+from llama_cloud.types import CompositeRetrievalMode
+from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.core.chat_engine import CondensePlusContextChatEngine
 
+# --- Configuration ---
+# Replace with your actual LlamaCloud Project Name
+LLAMA_CLOUD_PROJECT_NAME = "CustomerSupportProject"
 
-def respond(
-    message,
-    history: list[tuple[str, str]],
-    system_message,
-    max_tokens,
-    temperature,
-    top_p,
-):
-    messages = [{"role": "system", "content": system_message}]
+# Configure Anthropic LLM (Claude-3 Opus)
+# Ensure ANTHROPIC_API_KEY is set in your environment variables
+Settings.llm = Anthropic(model="claude-3-haiku-20240307", temperature=0)
+print(f"Configured LLM: {Settings.llm.model}")
 
-    for val in history:
-        if val[0]:
-            messages.append({"role": "user", "content": val[0]})
-        if val[1]:
-            messages.append({"role": "assistant", "content": val[1]})
+# --- Assume LlamaCloud Indices are pre-created ---
+# In a real scenario, you would have uploaded your documents to these indices
+# via LlamaCloud UI or API. Here, we connect to existing indices.
+print("Connecting to LlamaCloud Indices...")
 
-    messages.append({"role": "user", "content": message})
+try:
+    product_manuals_index = LlamaCloudIndex(
+        name="ProductManuals",
+        project_name=LLAMA_CLOUD_PROJECT_NAME,
+        # api_key=os.getenv("LLAMA_CLOUD_API_KEY") # API key can also be passed here
+    )
+    faq_general_info_index = LlamaCloudIndex(
+        name="FAQGeneralInfo",
+        project_name=LLAMA_CLOUD_PROJECT_NAME,
+    )
+    billing_policy_index = LlamaCloudIndex(
+        name="BillingPolicy",
+        project_name=LLAMA_CLOUD_PROJECT_NAME,
+    )
+    print("Successfully connected to LlamaCloud Indices.")
 
-    response = ""
+except Exception as e:
+    print(f"Error connecting to LlamaCloud Indices. Please ensure they exist and API key is correct: {e}")
+    print("Exiting. Please create your indices on LlamaCloud and set environment variables.")
+    exit() # Exit if indices cannot be connected, as the rest of the code depends on them
 
-    for message in client.chat_completion(
-        messages,
-        max_tokens=max_tokens,
-        stream=True,
-        temperature=temperature,
-        top_p=top_p,
-    ):
-        token = message.choices[0].delta.content
-
-        response += token
-        yield response
-
-
-"""
-For information on how to customize the ChatInterface, peruse the gradio docs: https://www.gradio.app/docs/chatinterface
-"""
-demo = gr.ChatInterface(
-    respond,
-    additional_inputs=[
-        gr.Textbox(value="You are a friendly Chatbot.", label="System message"),
-        gr.Slider(minimum=1, maximum=2048, value=512, step=1, label="Max new tokens"),
-        gr.Slider(minimum=0.1, maximum=4.0, value=0.7, step=0.1, label="Temperature"),
-        gr.Slider(
-            minimum=0.1,
-            maximum=1.0,
-            value=0.95,
-            step=0.05,
-            label="Top-p (nucleus sampling)",
-        ),
-    ],
+# --- Create LlamaCloudCompositeRetriever for Agentic Routing ---
+print("Creating LlamaCloudCompositeRetriever...")
+composite_retriever = LlamaCloudCompositeRetriever(
+    name="Customer Support Retriever",
+    project_name=LLAMA_CLOUD_PROJECT_NAME,
+    create_if_not_exists=True,
+    mode=CompositeRetrievalMode.ROUTING, # Enable intelligent routing
+    rerank_top_n=5, # Rerank and return top 5 results from the chosen indices
+    # api_key=os.getenv("LLAMA_CLOUD_API_KEY") # API key can also be passed here
 )
 
+# Add indices to the composite retriever with descriptive descriptions
+# These descriptions are crucial for the agent's routing decisions.
+print("Adding sub-indices to the composite retriever with descriptions...")
+composite_retriever.add_index(
+    product_manuals_index,
+    description="Information source for detailed product features, technical specifications, troubleshooting steps, and usage guides for various products.",
+)
+composite_retriever.add_index(
+    faq_general_info_index,
+    description="Contains common questions and answers, general company policies, public announcements, and basic information about services.",
+)
+composite_retriever.add_index(
+    billing_policy_index,
+    description="Provides information related to pricing, subscriptions, invoices, payment methods, and refund policies.",
+)
+print("Sub-indices added.")
+
+# --- Create ChatMemoryBuffer and CondensePlusContextChatEngine ---
+memory = ChatMemoryBuffer.from_defaults(token_limit=3900)
+chat_engine = CondensePlusContextChatEngine.from_defaults(
+    retriever=composite_retriever, 
+    memory=memory, 
+    system_prompt=(
+        """
+        You are a Smart Customer Support Triage Agent. 
+        Always be polite and friendly. 
+        Provide accurate answers from product manuals, FAQs, and billing policies by intelligently routing queries to the most relevant knowledge base.
+        """
+    ), 
+    verbose=True,
+)
+print("ChatEngine initialized.")
+
+# --- Gradio Chat UI ---
+def chat_with_agent(message, history):
+    """
+    Handles the chat interaction with the agent.
+    `history` is a list of [user_message, agent_response] pairs.
+    """
+    # Gradio history format needs to be converted for LlamaIndex if not using a direct chat engine
+    # However, CondenseQuestionChatEngine handles internal history.
+    # We just pass the new message to the chat_engine.
+    try:
+        response = chat_engine.chat(message)
+        return str(response)
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+print("Launching Gradio interface...")
+iface = gr.ChatInterface(
+    fn=chat_with_agent,
+    title="Smart Customer Support Triage Agent",
+    description=(
+        "Hello! I'm your Smart Customer Support Triage Agent. "
+        "I can answer questions about our product manuals, FAQs, and billing policies. "
+        "Ask me anything!"
+    ),
+    examples=[
+        "I can't login TechSolve.",
+        "What is your refund policy?",
+        "What services do your company offer?",
+        "Can you tell me about the latest software update for Product Y?"
+    ],
+    chatbot=gr.Chatbot(height=500),
+)
 
 if __name__ == "__main__":
-    demo.launch()
+    iface.launch()
