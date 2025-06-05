@@ -147,5 +147,19 @@ iface = gr.ChatInterface(
     ),
 )
 
+# Create a Gradio Blocks layout to add the chat interface and additional text
+with gr.Blocks() as demo:
+    iface.render()  # Render the chat interface
+    gr.Markdown(
+        "_\*By using this chat, you agree that conversations may be recorded for improvement and evaluation. DO NOT disclose any privacy information in the conversation._"
+    )
+
+# Create a Gradio Blocks layout to add the chat interface and additional text
+with gr.Blocks() as demo:
+    iface.render()  # Render the chat interface
+    gr.Markdown(
+        "_\*By using this chat, you agree that conversations may be recorded for improvement and evaluation. DO NOT disclose any privacy information in the conversation._"
+    )
+
 if __name__ == "__main__":
-    iface.launch()
+    demo.launch()
