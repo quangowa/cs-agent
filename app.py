@@ -23,12 +23,16 @@ Settings.llm = Anthropic(model="claude-3-haiku-20240307", temperature=0)
 print(f"[INFO] Configured LLM: {Settings.llm.model}")
 
 # Configure LlamaTrace (Arize Phoenix)
+PHOENIX_PROJECT_NAME = os.environ["PHOENIX_PROJECT_NAME"]
+PHOENIX_API_KEY = os.environ["PHOENIX_API_KEY"]
+os.environ["PHOENIX_CLIENT_HEADERS"] = f"api_key={PHOENIX_API_KEY}"
 tracer_provider = register(
-  project_name=os.getenv('PHOENIX_PROJECT_NAME'),
-  endpoint=os.getenv('PHOENIX_COLLECTOR_ENDPOINT'),
+  project_name=PHOENIX_PROJECT_NAME,
+  endpoint="https://app.phoenix.arize.com/v1/traces",
+  auto_instrument=True
 )
 LlamaIndexInstrumentor().instrument(tracer_provider=tracer_provider)
-print("[INFO] LlamaIndex tracing configured for Arize Phoenix (LlamaTrace).")
+print("[INFO] LlamaIndex tracing configured for LlamaTrace (Arize Phoenix).")
 
 # --- Assume LlamaCloud Indices are pre-created ---
 # In a real scenario, you would have uploaded your documents to these indices
