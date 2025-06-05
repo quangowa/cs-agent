@@ -1,11 +1,13 @@
 import os
 import gradio as gr
+from phoenix.otel import register
+from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
 
 from llama_index.indices.managed.llama_cloud import (
     LlamaCloudIndex,
     LlamaCloudCompositeRetriever,
 )
-from llama_index.core import Settings, set_global_handler
+from llama_index.core import Settings
 from llama_index.llms.anthropic import Anthropic
 from llama_cloud.types import CompositeRetrievalMode
 from llama_index.core.memory import ChatMemoryBuffer
@@ -20,14 +22,12 @@ LLAMA_CLOUD_PROJECT_NAME = "CustomerSupportProject"
 Settings.llm = Anthropic(model="claude-3-haiku-20240307", temperature=0)
 print(f"[INFO] Configured LLM: {Settings.llm.model}")
 
-# Configure Arize Phoenix (LlamaTrace)
-PHOENIX_API_KEY = os.environ["PHOENIX_API_KEY"]
-os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"api_key={PHOENIX_API_KEY}"
-set_global_handler(
-    "arize_phoenix",
-    endpoint="https://llamatrace.com/v1/traces",
-    PHOENIX_PROJECT_NAME="cs-agent",
+# Configure LlamaTrace (Arize Phoenix)
+tracer_provider = register(
+  project_name=os.getenv('PHOENIX_PROJECT_NAME'),
+  endpoint=os.getenv('PHOENIX_COLLECTOR_ENDPOINT'),
 )
+LlamaIndexInstrumentor().instrument(tracer_provider=tracer_provider)
 print("[INFO] LlamaIndex tracing configured for Arize Phoenix (LlamaTrace).")
 
 # --- Assume LlamaCloud Indices are pre-created ---
