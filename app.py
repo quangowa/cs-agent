@@ -107,25 +107,26 @@ print("[INFO] ChatEngine initialized.")
 
 
 # --- Gradio Chat UI ---
-def chat_with_agent(message):
+def chat_with_agent(message, history):
     """
     Handles the chat interaction with the agent.
+    `history` is a list of [user_message, agent_response] pairs.
     """
+    # Gradio history format needs to be converted for LlamaIndex if not using a direct chat engine
+    # However, CondensePlusContextChatEngine handles internal history.
+    # We just pass the new message to the chat_engine.
     try:
         response = chat_engine.chat(message)
         return str(response)
     except Exception as e:
         return f"An error occurred: {e}"
 
-
 print("[INFO] Launching Gradio interface...")
-
 description = """
 Hello! I'm your Smart Customer Support Triage Agent. I can answer questions about our product manuals, FAQs, and billing policies. Ask me anything!
 
 Explore the documents in `./data` directory for sample knowledge base 📑
 """
-
 iface = gr.ChatInterface(
     fn=chat_with_agent,
     title="Smart Customer Support Triage Agent",
