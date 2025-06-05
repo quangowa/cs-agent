@@ -104,7 +104,7 @@ print("[INFO] ChatEngine initialized.")
 
 
 # --- Gradio Chat UI ---
-def chat_with_agent(message):
+def chat_with_agent(message, history):
     """
     Handles the chat interaction with the agent.
     """
