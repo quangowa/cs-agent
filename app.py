@@ -21,10 +21,13 @@ Settings.llm = Anthropic(model="claude-3-haiku-20240307", temperature=0)
 print(f"[INFO] Configured LLM: {Settings.llm.model}")
 
 # Configure Arize Phoenix (LlamaTrace)
-os.environ["PHOENIX_PROJECT_NAME"] = "cs-agent"
 PHOENIX_API_KEY = os.environ["PHOENIX_API_KEY"]
 os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"api_key={PHOENIX_API_KEY}"
-set_global_handler("arize_phoenix", endpoint="https://llamatrace.com/v1/traces")
+set_global_handler(
+    "arize_phoenix",
+    endpoint="https://llamatrace.com/v1/traces",
+    PHOENIX_PROJECT_NAME="cs-agent",
+)
 print("[INFO] LlamaIndex tracing configured for Arize Phoenix (LlamaTrace).")
 
 # --- Assume LlamaCloud Indices are pre-created ---
@@ -104,7 +107,7 @@ print("[INFO] ChatEngine initialized.")
 
 
 # --- Gradio Chat UI ---
-def chat_with_agent(message, history):
+def chat_with_agent(message):
     """
     Handles the chat interaction with the agent.
     """
