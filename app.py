@@ -1,3 +1,4 @@
+import os
 import gradio as gr
 
 from llama_index.indices.managed.llama_cloud import (
@@ -20,8 +21,9 @@ Settings.llm = Anthropic(model="claude-3-haiku-20240307", temperature=0)
 print(f"[INFO] Configured LLM: {Settings.llm.model}")
 
 # Configure Arize Phoenix (LlamaTrace)
-PHOENIX_PROJECT_NAME = "cs-agent"
-OTEL_EXPORTER_OTLP_HEADERS = f"api_key={PHOENIX_API_KEY}"
+os.environ["PHOENIX_PROJECT_NAME"] = "cs-agent"
+PHOENIX_API_KEY = os.environ["PHOENIX_API_KEY"]
+os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"api_key={PHOENIX_API_KEY}"
 set_global_handler("arize_phoenix", endpoint="https://llamatrace.com/v1/traces")
 print("[INFO] LlamaIndex tracing configured for Arize Phoenix (LlamaTrace).")
 
