@@ -141,10 +141,6 @@ iface = gr.ChatInterface(
         "What services do your company offer?",
         "Tell me about the pricing plans.",
     ],
-    chatbot=gr.Chatbot(
-        height=500,
-        type="messages",
-    ),
 )
 
 # Create a Gradio Blocks layout to add the chat interface and additional text
