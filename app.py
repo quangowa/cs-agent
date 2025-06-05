@@ -109,7 +109,6 @@ chat_engine = CondensePlusContextChatEngine.from_defaults(
 )
 print("[INFO] ChatEngine initialized.")
 
-
 # --- Gradio Chat UI ---
 def chat_with_agent(message, history):
     """
@@ -141,6 +140,7 @@ iface = gr.ChatInterface(
         "What services do your company offer?",
         "Tell me about the pricing plans.",
     ],
+    cache_examples=False
 )
 
 # Create a Gradio Blocks layout to add the chat interface and additional text
