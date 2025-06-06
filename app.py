@@ -19,7 +19,7 @@ LLAMA_CLOUD_PROJECT_NAME = "CustomerSupportProject"
 
 # Configure Anthropic LLM
 # Ensure ANTHROPIC_API_KEY is set in your environment variables
-Settings.llm = Anthropic(model="claude-3-haiku-20240307", temperature=0)
+Settings.llm = Anthropic(model="claude-sonnet-4-0", temperature=0)
 print(f"[INFO] Configured LLM: {Settings.llm.model}")
 
 # Configure LlamaTrace (Arize Phoenix)
@@ -27,9 +27,9 @@ PHOENIX_PROJECT_NAME = os.environ["PHOENIX_PROJECT_NAME"]
 PHOENIX_API_KEY = os.environ["PHOENIX_API_KEY"]
 os.environ["PHOENIX_CLIENT_HEADERS"] = f"api_key={PHOENIX_API_KEY}"
 tracer_provider = register(
-  project_name=PHOENIX_PROJECT_NAME,
-  endpoint="https://app.phoenix.arize.com/v1/traces",
-  auto_instrument=True
+    project_name=PHOENIX_PROJECT_NAME,
+    endpoint="https://app.phoenix.arize.com/v1/traces",
+    auto_instrument=True,
 )
 LlamaIndexInstrumentor().instrument(tracer_provider=tracer_provider)
 print("[INFO] LlamaIndex tracing configured for LlamaTrace (Arize Phoenix).")
@@ -43,7 +43,6 @@ try:
     product_manuals_index = LlamaCloudIndex(
         name="ProductManuals",
         project_name=LLAMA_CLOUD_PROJECT_NAME,
-        # api_key=os.getenv("LLAMA_CLOUD_API_KEY") # API key can also be passed here
     )
     faq_general_info_index = LlamaCloudIndex(
         name="FAQGeneralInfo",
@@ -72,7 +71,6 @@ composite_retriever = LlamaCloudCompositeRetriever(
     create_if_not_exists=True,
     mode=CompositeRetrievalMode.ROUTING,  # Enable intelligent routing
     rerank_top_n=5,  # Rerank and return top 5 results from the chosen indices
-    # api_key=os.getenv("LLAMA_CLOUD_API_KEY") # API key can also be passed here
 )
 
 # Add indices to the composite retriever with descriptive descriptions
@@ -92,7 +90,7 @@ composite_retriever.add_index(
 )
 print("[INFO] Sub-indices added.")
 
-# --- Create ChatMemoryBuffer and CondensePlusContextChatEngine ---
+# --- Create CondensePlusContextChatEngine ---
 memory = ChatMemoryBuffer.from_defaults(token_limit=3900)
 chat_engine = CondensePlusContextChatEngine.from_defaults(
     retriever=composite_retriever,
@@ -102,6 +100,9 @@ chat_engine = CondensePlusContextChatEngine.from_defaults(
         You are a Smart Customer Support Triage Agent. 
         Always be polite and friendly. 
         Provide accurate answers from product manuals, FAQs, and billing policies by intelligently routing queries to the most relevant knowledge base.
+        Provide accurate, precise, and useful information directly. 
+        Never refer to or mention your information sources (e.g., "the manual says", "from the document"). 
+        State facts authoritatively.        
         When asked about file-specific details like the author, creation date, or last modification date, retrieve this information from the document's metadata if available in the provided context.
         """
     ),
@@ -124,31 +125,110 @@ def chat_with_agent(message, history):
     except Exception as e:
         return f"An error occurred: {e}"
 
+# Global variables to manage `check_retriever` output
+check_retriever_history = []
+
+# Check retrieved top document's index, filename and score
+def check_retriever(chat_history):
+    global check_retriever_history
+
+    message = chat_history[-1][0]
+    nodes = composite_retriever.retrieve(message)
+    index_retrieved = nodes[0].metadata["retriever_pipeline_name"]
+    file_retrieved = nodes[0].metadata["file_name"]
+    score_retrieved = nodes[0].score
+
+    # Check if the last entry in chat_history has a bot response (indicating a completed turn)
+    if chat_history and chat_history[-1][1] is not None:
+        index_retrieved_text = f"Index: {index_retrieved}"
+        file_retrieved_text = f"File: {file_retrieved}"
+        score_retrieved_text = f"Score: {score_retrieved}"
+        check_retriever_history.append(f"{index_retrieved_text}")
+        check_retriever_history.append(f"{file_retrieved_text}")
+        check_retriever_history.append(f"{score_retrieved_text}\n==============================")
+
+    return "\n".join(check_retriever_history)
+
+
 print("[INFO] Launching Gradio interface...")
+
+# Markdown text for chat interface
 description = """
 Hello! I'm your Smart Customer Support Triage Agent. I can answer questions about our product manuals, FAQs, and billing policies. Ask me anything!
 
 Explore the documents in `./data` directory for sample knowledge base 📑
 """
-iface = gr.ChatInterface(
-    fn=chat_with_agent,
-    title="Smart Customer Support Triage Agent",
-    description=description,
-    examples=[
-        "The app is not responding.",
-        "What is your refund policy?",
-        "What services do your company offer?",
-        "Tell me about the pricing plans.",
-    ],
-    cache_examples=False
-)
 
-# Create a Gradio Blocks layout to add the chat interface and additional text
+# Markdown text for `./data` folder structure
+knowledge_base_md = """
+### 📁 Sample Knowledge Base
+```
+./data/
+├── billing_policies_metadata.csv
+├── faqs_general_metadata.csv
+├── product_manuals_metadata.csv
+├── product_manuals.pdf
+├── task_automation_setup.pdf
+├── collaboration_tools_overview.pdf
+├── faqs_general.pdf
+├── remote_work_best_practices_faq.pdf
+├── sustainability_initiatives_info.pdf
+├── billing_policies.pdf
+├── multi_user_discount_guide.pdf
+├── late_payment_policy.pdf
+└── late_payment_policy_v2.pdf
+```
+"""
+
+# Create a Gradio Blocks layout to structure the application
 with gr.Blocks() as demo:
-    iface.render()  # Render the chat interface
+    # Create the Gradio ChatInterface at the top
+    chat_interface = gr.ChatInterface(
+        fn=chat_with_agent,
+        title="Smart Customer Support Triage Agent",
+        description=description,
+        examples=[
+            "Help! No response from the app, I can't do anything. What should I do? Who can I contact?",
+            "Can we request a Zoom training on remote work? Do you have any guides available?",
+            "I didn't pay the invoice. Outstanding 23 days. What's the late fee you are charging?",
+            "Who is the author of the product manual and when is the last modified date?",
+        ],
+        cache_examples=False,
+    )
+
+    # DeepLinkButton for sharing current conversation
+    gr.DeepLinkButton()
+
+    # Privacy notice under the chat interface
     gr.Markdown(
         "_\*By using this chat, you agree that conversations may be recorded for improvement and evaluation. DO NOT disclose any privacy information in the conversation._"
     )
 
+    # Row for the two side-by-side read-only text boxes
+    with gr.Row():
+        # Left column for the simple markdown text
+        with gr.Column(scale=1):
+            gr.Markdown(knowledge_base_md)
+
+        # Right column for showing agentic retrieval and smart routing
+        with gr.Column(scale=1):
+            check_retriever_display = gr.Textbox(
+                value="",  # Starts empty
+                label="Top Retrieved Document",
+                interactive=False,  # Make it read-only
+                lines=12,  # Show 12 lines initially
+                max_lines=12,  # Allow up to 12 lines before scrolling
+                autoscroll=True,  # Automatically scroll to the bottom when new content is added
+            )
+
+    # Set up the event handler to update the counter
+    # Pass the chatbot component itself as input to `check_retriever`
+    chat_interface.chatbot.change(
+        fn=check_retriever,
+        inputs=[chat_interface.chatbot],  # Pass the chatbot history
+        outputs=check_retriever_display,
+    )
+
+# Launch the interface
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(show_error=True)
