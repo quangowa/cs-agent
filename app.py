@@ -70,7 +70,7 @@ composite_retriever = LlamaCloudCompositeRetriever(
     project_name=LLAMA_CLOUD_PROJECT_NAME,
     create_if_not_exists=True,
     mode=CompositeRetrievalMode.ROUTING,  # Enable intelligent routing
-    rerank_top_n=5,  # Rerank and return top 5 results from the chosen indices
+    rerank_top_n=2,  # Rerank and return top 2 results from the chosen indices
 )
 
 # Add indices to the composite retriever with descriptive descriptions
@@ -125,30 +125,29 @@ def chat_with_agent(message, history):
     except Exception as e:
         return f"An error occurred: {e}"
 
-# Global variables to manage `check_retriever` output
-check_retriever_history = []
-
-# Check retrieved top document's index, filename and score
+# Check condensed question and retrieved nodes
 def check_retriever(chat_history):
-    global check_retriever_history
-
-    message = chat_history[-1][0]
-    nodes = composite_retriever.retrieve(message)
-    index_retrieved = nodes[0].metadata["retriever_pipeline_name"]
-    file_retrieved = nodes[0].metadata["file_name"]
-    score_retrieved = nodes[0].score
-
     # Check if the last entry in chat_history has a bot response (indicating a completed turn)
     if chat_history and chat_history[-1][1] is not None:
-        index_retrieved_text = f"Index: {index_retrieved}"
-        file_retrieved_text = f"File: {file_retrieved}"
-        score_retrieved_text = f"Score: {score_retrieved}"
-        check_retriever_history.append(f"{index_retrieved_text}")
-        check_retriever_history.append(f"{file_retrieved_text}")
-        check_retriever_history.append(f"{score_retrieved_text}\n==============================")
+        check_retriever_text = []
+        message = chat_history[-1][0]  # extract user message
+        condensed_question = chat_engine._condense_question(
+            chat_engine.chat_history, message
+        )
+        check_retriever_text.append(f"Condensed question: {condensed_question}")
+        check_retriever_text.append("==============================")
+        nodes = composite_retriever.retrieve(condensed_question)
+        for i, node in enumerate(nodes):
+            metadata = node.metadata
+            node_block = f"""\
+[Node {i + 1}]
+Index: {metadata["retriever_pipeline_name"]}
+File: {metadata["file_name"]}
+Score: {node.score}
+=============================="""
+            check_retriever_text.append(node_block)
 
-    return "\n".join(check_retriever_history)
-
+        return "\n".join(check_retriever_text)
 
 print("[INFO] Launching Gradio interface...")
 
@@ -164,24 +163,27 @@ knowledge_base_md = """
 ### 📁 Sample Knowledge Base
 ```
 ./data/
-├── billing_policies_metadata.csv
-├── faqs_general_metadata.csv
-├── product_manuals_metadata.csv
-├── product_manuals.pdf
-├── task_automation_setup.pdf
-├── collaboration_tools_overview.pdf
-├── faqs_general.pdf
-├── remote_work_best_practices_faq.pdf
-├── sustainability_initiatives_info.pdf
-├── billing_policies.pdf
-├── multi_user_discount_guide.pdf
-├── late_payment_policy.pdf
-└── late_payment_policy_v2.pdf
+├── ProductManuals/
+│   ├── product_manuals_metadata.csv
+│   ├── product_manuals.pdf
+│   ├── task_automation_setup.pdf
+│   └── collaboration_tools_overview.pdf
+├── FAQGeneralInfo/
+│   ├── faqs_general_metadata.csv
+│   ├── faqs_general.pdf
+│   ├── remote_work_best_practices_faq.pdf
+│   └── sustainability_initiatives_info.pdf
+└── BillingPolicy/
+    ├── billing_policies_metadata.csv
+    ├── billing_policies.pdf
+    ├── multi_user_discount_guide.pdf
+    ├── late_payment_policy.pdf
+    └── late_payment_policy_v2.pdf
 ```
 """
 
 # Create a Gradio Blocks layout to structure the application
-with gr.Blocks() as demo:
+with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     # Create the Gradio ChatInterface at the top
     chat_interface = gr.ChatInterface(
         fn=chat_with_agent,
@@ -192,6 +194,8 @@ with gr.Blocks() as demo:
             "Can we request a Zoom training on remote work? Do you have any guides available?",
             "I didn't pay the invoice. Outstanding 23 days. What's the late fee you are charging?",
             "Who is the author of the product manual and when is the last modified date?",
+            "Who are the founders of this company? What are their backgrounds?",
+            "What does the mascot of your company look like?",
         ],
         cache_examples=False,
     )
@@ -214,10 +218,10 @@ with gr.Blocks() as demo:
         with gr.Column(scale=1):
             check_retriever_display = gr.Textbox(
                 value="",  # Starts empty
-                label="Top Retrieved Document",
+                label="Agentic Retrieval & Smart Routing",
                 interactive=False,  # Make it read-only
-                lines=12,  # Show 12 lines initially
-                max_lines=12,  # Allow up to 12 lines before scrolling
+                lines=18,  # Show 18 lines initially
+                max_lines=18,  # Allow up to 18 lines before scrolling
                 autoscroll=True,  # Automatically scroll to the bottom when new content is added
             )
 
