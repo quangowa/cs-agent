@@ -7,7 +7,7 @@ from llama_index.indices.managed.llama_cloud import (
     LlamaCloudCompositeRetriever,
 )
 from llama_index.core import Settings
-from llama_index.llms.anthropic import Anthropic
+from llama_index.llms.nebius import NebiusLLM
 from llama_cloud.types import CompositeRetrievalMode
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
@@ -26,9 +26,12 @@ from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
 # Replace with your actual LlamaCloud Project Name
 LLAMA_CLOUD_PROJECT_NAME = "CustomerSupportProject"
 
-# Configure Anthropic LLM
-# Ensure ANTHROPIC_API_KEY is set in your environment variables
-Settings.llm = Anthropic(model="claude-sonnet-4-0", temperature=0)
+# Configure NebiusLLM
+# Ensure NEBIUS_API_KEY is set in your environment variables
+Settings.llm = NebiusLLM(
+    model="meta-llama/Meta-Llama-3.1-8B-Instruct", 
+    temperature=0
+)
 print(f"[INFO] Configured LLM: {Settings.llm.model}")
 
 # Configure LlamaTrace (Arize Phoenix)
