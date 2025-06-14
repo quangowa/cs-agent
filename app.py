@@ -137,40 +137,6 @@ When asked about file-specific details like the author, creation date, or last m
 print("[INFO] ChatEngine initialized.")
 
 # --- Gradio Chat UI ---
-# Markdown text for chat interface
-description_text = """
-Hello! I'm your Smart Customer Support Triage Agent. I can answer questions about our product manuals, FAQs, and billing policies. Ask me anything!
-
-Explore the documents in `./data` directory for sample knowledge base 📑
-"""
-
-# Markdown text for `./data` folder structure
-knowledge_base_md = """
-### 📁 Sample Knowledge Base
-```
-./data/
-├── ProductManuals/
-│   ├── product_manuals_metadata.csv
-│   ├── product_manuals.pdf
-│   ├── task_automation_setup.pdf
-│   └── collaboration_tools_overview.pdf
-├── FAQGeneralInfo/
-│   ├── faqs_general_metadata.csv
-│   ├── faqs_general.pdf
-│   ├── remote_work_best_practices_faq.pdf
-│   └── sustainability_initiatives_info.pdf
-├── BillingPolicy/
-│   ├── billing_policies_metadata.csv
-│   ├── billing_policies.pdf
-│   ├── multi_user_discount_guide.pdf
-│   ├── late_payment_policy.pdf
-│   └── late_payment_policy_v2.pdf
-└── CompanyIntroductionSlides/
-    ├── company_introduction_slides_metadata.csv
-    └── TechSolve_Introduction.pptx
-```
-"""
-
 def initial_submit(message: str, history: list):
     """
     Handles the immediate UI update after user submits a message.
@@ -277,6 +243,40 @@ Score: {score}
         # Only return the detailed error in the retriever info box
         retriever_output_text = f"Error generating retriever info: {e}"
         return history, retriever_output_text
+
+# Markdown text for the application and chatbot welcoming message
+description_text = """
+Hello! I'm your Smart Customer Support Triage Agent. I can answer questions about our product manuals, FAQs, and billing policies. Ask me anything!
+
+Explore the documents in `./data` directory for sample knowledge base 📑
+"""
+
+# Markdown text for `./data` folder structure
+knowledge_base_md = """
+### 📁 Sample Knowledge Base ([click to explore!](https://huggingface.co/spaces/karenwky/cs-agent/tree/main/data))
+```
+./data/
+├── ProductManuals/
+│   ├── product_manuals_metadata.csv
+│   ├── product_manuals.pdf
+│   ├── task_automation_setup.pdf
+│   └── collaboration_tools_overview.pdf
+├── FAQGeneralInfo/
+│   ├── faqs_general_metadata.csv
+│   ├── faqs_general.pdf
+│   ├── remote_work_best_practices_faq.pdf
+│   └── sustainability_initiatives_info.pdf
+├── BillingPolicy/
+│   ├── billing_policies_metadata.csv
+│   ├── billing_policies.pdf
+│   ├── multi_user_discount_guide.pdf
+│   ├── late_payment_policy.pdf
+│   └── late_payment_policy_v2.pdf
+└── CompanyIntroductionSlides/
+    ├── company_introduction_slides_metadata.csv
+    └── TechSolve_Introduction.pptx
+```
+"""
 
 # Create a Gradio `Blocks` layout to structure the application
 print("[INFO] Launching Gradio interface...")
@@ -416,7 +416,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     # DeepLinkButton for sharing current conversation
     gr.DeepLinkButton()
 
-    # Privacy notice under the chat interface
+    # Privacy notice at the bottom
     gr.Markdown(
         "_\*By using this chat, you agree that conversations may be recorded for improvement and evaluation. DO NOT disclose any privacy information in the conversation._"
     )
