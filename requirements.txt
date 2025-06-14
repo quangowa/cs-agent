@@ -1,6 +1,6 @@
 llama-index
 llama-index-indices-managed-llama-cloud
-llama-index-llms-anthropic
+llama-index-llms-nebius
 llama-index-callbacks-arize-phoenix
 arize-phoenix
 gradio
