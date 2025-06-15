@@ -29,7 +29,7 @@ LLAMA_CLOUD_PROJECT_NAME = "CustomerSupportProject"
 # Configure NebiusLLM
 # Ensure NEBIUS_API_KEY is set in your environment variables
 Settings.llm = NebiusLLM(
-    model="mistralai/Mistral-Nemo-Instruct-2407", 
+    model="meta-llama/Meta-Llama-3.1-405B-Instruct", 
     temperature=0
 )
 print(f"[INFO] Configured LLM: {Settings.llm.model}")
