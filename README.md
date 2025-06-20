@@ -6,21 +6,21 @@ colorTo: purple
 sdk: gradio
 sdk_version: 5.34.2
 app_file: app.py
-pinned: false
+pinned: true
 license: mit
 short_description: Agentic retrieval & smart routing for customer support
 tags:
-  - agent-demo-track
-  - llamaindex
-  - llamacloud
-  - rag
-  - agentic-retrieval
-  - smart-routing
-  - customer-service
-  - chatbot
-  - claude
-  - anthropic
-  - cohere-embed
+- agent-demo-track
+- llamaindex
+- llamacloud
+- rag
+- agentic-retrieval
+- smart-routing
+- customer-service
+- chatbot
+- claude
+- anthropic
+- cohere-embed
 ---
 
 # 💬 Smart Customer Support Triage Agent
