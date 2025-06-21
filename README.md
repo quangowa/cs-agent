@@ -200,6 +200,13 @@ python app.py
 - **Escalation Logic**: Smart human handoff based on complexity scoring
 - **Learning System**: Continuous improvement from customer interactions
 
+## 🙏 Acknowledgments
+
+- [RAG is dead, long live agentic retrieval — LlamaIndex](https://www.llamaindex.ai/blog/rag-is-dead-long-live-agentic-retrieval)
+- [LlamaCloudIndex + LlamaCloudRetriever - LlamaIndex](https://docs.llamaindex.ai/en/stable/module_guides/indexing/llama_cloud_index/)
+- [Condense plus context - LlamaIndex](https://docs.llamaindex.ai/en/stable/api_reference/chat_engines/condense_plus_context/)
+- [LlamaIndex | Phoenix](https://arize.com/docs/phoenix/tracing/integrations-tracing/llamaindex#setup)
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
