@@ -27,6 +27,9 @@ tags:
 
 An intelligent customer support system powered by LlamaIndex, Anthropic Claude and Gradio, featuring agentic routing and smart document retrieval across multiple knowledge bases.
 
+> [!IMPORTANT]
+> This project earned [Agent Track Honorable Mention](https://www.gradio.app/hackathon-winners) in “Gradio Agents & MCP Hackathon 2025”. Thank you so much! 🥹🙏❤️
+
 ## 🔮 Live Demo
 
 Try the chatbot: **[https://huggingface.co/spaces/karenwky/cs-agent](https://huggingface.co/spaces/karenwky/cs-agent)**
