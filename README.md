@@ -4,7 +4,7 @@ emoji: 💬
 colorFrom: yellow
 colorTo: purple
 sdk: gradio
-sdk_version: 5.34.2
+sdk_version: 5.33.0
 app_file: app.py
 pinned: true
 license: mit
@@ -212,4 +212,4 @@ python app.py
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. 
