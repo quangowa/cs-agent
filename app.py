@@ -26,13 +26,50 @@ from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
 # Replace with your actual LlamaCloud Project Name
 LLAMA_CLOUD_PROJECT_NAME = "CustomerSupportProject"
 
-# Configure NebiusLLM
-# Ensure NEBIUS_API_KEY is set in your environment variables
-Settings.llm = NebiusLLM(
-    model="meta-llama/Meta-Llama-3.1-405B-Instruct", 
-    temperature=0
-)
-print(f"[INFO] Configured LLM: {Settings.llm.model}")
+# Configure LLM provider
+def configure_llm() -> None:
+    """Configure the global LLM provider used by LlamaIndex settings.
+
+    The application supports two providers:
+
+    - ``Nebius`` (default): requires ``NEBIUS_API_KEY`` and targets the
+      Meta Llama 3.1 405B Instruct model hosted on Nebius AI Studio.
+    - ``Ollama``: runs against a local Ollama server. Configure with the
+      ``OLLAMA_MODEL`` (defaults to ``llama3.1``) and optional
+      ``OLLAMA_BASE_URL`` environment variables. Ensure an Ollama runtime
+      is running before launching the app.
+
+    Select a provider by setting ``LLM_PROVIDER`` to ``ollama`` or
+    ``nebius`` (case-insensitive). Any other value falls back to the
+    Nebius configuration.
+    """
+
+    provider = os.environ.get("LLM_PROVIDER", "nebius").strip().lower()
+
+    if provider == "ollama":
+        from llama_index.llms.ollama import Ollama
+
+        ollama_model = os.environ.get("OLLAMA_MODEL", "llama3.1")
+        ollama_base_url = os.environ.get("OLLAMA_BASE_URL")
+
+        ollama_kwargs = {"model": ollama_model}
+        if ollama_base_url:
+            ollama_kwargs["base_url"] = ollama_base_url
+
+        Settings.llm = Ollama(**ollama_kwargs)
+        print(
+            "[INFO] Configured LLM provider: Ollama"
+            f" (model={ollama_model}, base_url={ollama_kwargs.get('base_url', 'http://localhost:11434')})"
+        )
+    else:
+        Settings.llm = NebiusLLM(
+            model="meta-llama/Meta-Llama-3.1-405B-Instruct",
+            temperature=0,
+        )
+        print(f"[INFO] Configured LLM provider: Nebius ({Settings.llm.model})")
+
+
+configure_llm()
 
 # Configure LlamaTrace (Arize Phoenix)
 PHOENIX_PROJECT_NAME = os.environ.get("PHOENIX_PROJECT_NAME")

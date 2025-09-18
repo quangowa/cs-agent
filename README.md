@@ -25,7 +25,7 @@ tags:
 
 # 💬 Smart Customer Support Triage Agent
 
-An intelligent customer support system powered by LlamaIndex, Anthropic Claude and Gradio, featuring agentic routing and smart document retrieval across multiple knowledge bases.
+An intelligent customer support system powered by LlamaIndex and Gradio, featuring agentic routing and smart document retrieval across multiple knowledge bases. The app now supports both Nebius-hosted Llama 3.1-405B and locally hosted Ollama models, so you can prototype with a cloud LLM or keep everything on your machine.
 
 > [!IMPORTANT]
 > This project earned [Agent Track Honorable Mention](https://www.gradio.app/hackathon-winners) in “Gradio Agents & MCP Hackathon 2025”. Thank you so much! 🥹🙏❤️
@@ -103,7 +103,8 @@ cs-agent/
 ### Prerequisites
 - Python 3.8+
 - LlamaCloud API key
-- Anthropic API key
+- Nebius API key (default cloud LLM)
+- (Optional) Ollama running locally if you want to use a self-hosted model
 - (Optional) Arize Phoenix API key
 
 ### Installation
@@ -121,8 +122,16 @@ pip install -r requirements.txt
 
 3. **Set environment variables**
 ```bash
-export ANTHROPIC_API_KEY="your-anthropic-api-key"
 export LLAMA_CLOUD_API_KEY="your-llamacloud-api-key"
+
+# Default: Nebius-hosted Llama 3.1 405B
+export NEBIUS_API_KEY="your-nebius-api-key"
+# export LLM_PROVIDER=nebius  # optional, defaults to Nebius
+
+# Optional: Switch to a local Ollama model
+# export LLM_PROVIDER=ollama
+# export OLLAMA_MODEL="llama3.1"           # defaults to llama3.1
+# export OLLAMA_BASE_URL="http://localhost:11434"  # defaults to localhost
 
 # Optional: For Phoenix tracing
 export PHOENIX_PROJECT_NAME="your-phoenix-project"
@@ -141,6 +150,16 @@ export PHOENIX_API_KEY="your-phoenix-api-key"
 ```bash
 python app.py
 ```
+
+## 🧪 Using Ollama Locally
+
+1. Install and start [Ollama](https://ollama.com/).
+2. Pull the model you want, for example:
+   ```bash
+   ollama pull llama3.1
+   ```
+3. Export the environment variables from the quick start with `LLM_PROVIDER=ollama` (and optionally `OLLAMA_MODEL` / `OLLAMA_BASE_URL`).
+4. Launch `python app.py` as usual. The app will route all completions through your local Ollama runtime while keeping the same retrieval flow and UI.
 
 ## 🗣️ Sample Questions
 
